@@ -1,6 +1,5 @@
 import os
 import openai
-from metaphor_python import Metaphor
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
@@ -48,10 +47,6 @@ def get_urls(metaphor, user_question):
 
 
 
-#Use this to select all the tags that have some sort of URL in their attributes, 
-#then later filter out those that dont have attrs that include any of the product names previously found
-def url_selector(tag):
-    return tag.name == 'img' or tag.has_attr('href') or tag.has_attr('alt') or tag.has_attr('src')
 
 
 
