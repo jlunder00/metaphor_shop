@@ -136,7 +136,7 @@ class Shop():
         return (fuzz.ratio(n1, n2)+fuzz.partial_ratio(n1, n2)+fuzz.token_sort_ratio(n1, n2))/3 
 
     def csv_to_df(self, csv):
-        return pd.read_csv(StringIO(csv))
+        return pd.read_csv(StringIO(csv), sep=';')
 
 
 
@@ -221,7 +221,7 @@ class MetaphorShoppingSearch():
 #        datetime_format = "%Y-%m-%d_%H-%M-%S.txt"
 
     def build_user_question(self):
-        self.user_q = "Product name: "+self.product+("\nPreferred Brand: "+self.pBrand if self.pBrand is not "" else "")+("\nPreferred Store: "+self.pStore if self.pStore is not "" else "")
+        self.user_q = "Product name: "+self.product+("\nPreferred Brand: "+self.pBrand if self.pBrand is not "" else "")+("\nPreferred Store: "+self.pStore if self.pStore is not "" else "") + ' catalog'
 
     #Get the product urls
     def get_urls(self):
@@ -256,6 +256,7 @@ class MetaphorShopping():
         self.metaphor = metaphor 
         self.searches = []
         self.searches_data = {'Product':[], 'Brand':[], 'Store':[], 'data':[]}
+        self.data = None
         # self.searches_data['Product'].append(product)
 
     def check_existing(self, product, pBrand, pStore):
@@ -268,7 +269,7 @@ class MetaphorShopping():
     def perform_shop_search(self, product="", pBrand="", pStore=""): 
         idx = self.check_existing(product, pBrand, pStore)
         if idx != -1:
-            return self.searches_data['data'][idx]
+            return self.searches_data['data'][idx] 
 
         self.searches.append(MetaphorShoppingSearch(product, pBrand, pStore, self.metaphor, self.search_opts, self.shop_opts))
         self.searches[-1].build_user_question()
@@ -294,8 +295,8 @@ class MetaphorShopping():
 
     def run_search(self, product="", pBrand="", pStore=""):
 
-        data = self.perform_shop_search(product, pBrand, pStore)
-        st.write(data)
+        self.data = self.perform_shop_search(product, pBrand, pStore)
+        st.write(self.data)
 
 
 
