@@ -2,6 +2,7 @@ import socket
 from urllib.parse import urlparse
 from omegaconf import OmegaConf
 import re
+import openai
 
 #Use this to select all the tags that have some sort of URL in their attributes, 
 #then later filter out those that dont have attrs that include any of the product names previously found
@@ -46,18 +47,19 @@ def get_gpt_response(user_message, system_message, model):
     return completion.choices[0].message.content
 
 def get_metaphor_response(metaphor, query, opts):
-    return metaphor.search(query, use_autoprompt=opts['use_autoprompt'])
+    return [s.url for s in metaphor.search(query, use_autoprompt=opts['use_autoprompt']).results]
     
 
 def load_config(config_file):
-    config = OmegaConf.load(config_file)
-    if config["text_tag"] == 'all':
-        config['text_tag'] = re.compile(".*")
+    conf = OmegaConf.load(config_file)
+    config = OmegaConf.to_container(conf, resolve=True)
+    if config['shop']["text_tag"] == 'all':
+        config['shop']['text_tag'] = re.compile(".*")
 
-    if config["attr_tag"] == 'all':
-        config['attr_tag'] = re.compile(".*")
+    if config['shop']["attr_tag"] == 'all':
+        config['shop']['attr_tag'] = re.compile(".*")
 
-    config['search_attrs'] = SEARCH_ATTR_SWITCH['config_search_attrs']
+    config['shop']['search_attrs'] = SEARCH_ATTR_SWITCH[config['shop']['search_attrs']]
 
     return config
     

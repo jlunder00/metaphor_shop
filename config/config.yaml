@@ -9,7 +9,7 @@ shop:
   text_only: false
   attr_only: false
   join_technique: "update" # join_technique: "manual"
-  join_source: "text"
+  join_source: "attr"
   text_tag: "all"
   text_attrs: {} 
     # href: true
@@ -23,7 +23,9 @@ shop:
 
   model: 'gpt-4'
 
-  max_product_per_page: 10
+  max_products_per_page: 10
+
+  attr_type: 'image'
 
   min_length:
     text: 15
@@ -50,6 +52,9 @@ shop:
   html_tag_min:
     attrs: 0
     text: 100
+
+  result_attrs:
+    image: ['alt', 'src']
   
 
   currencies: ['$','€','¥','£','¢','¤','฿','৳','₠','₡','₢','₣','₴','₰','₧','₳','₲','₪','₵','₯','₱','₨','₫', '\u20B3','\u0E3F','\u20BF', '\uFFE0','\u20A1','\u00A2','\u20A2','\u20B5','\u20AB','\u20AC','\uFFE1','\u00A3','\u20A4','\u20A3','\u0192','\u20B2','\u20AD','\u0141','\u20A5','\u20A6','\u20BD','\u20B1','\uFF04','\u0024','\u20AE','\u2133','\u20B6','\u20A9','\uFFE6','\u00A5','\uFFE5','\u20B4','\u20B8','\u00A4','\u20B0','\u17DB','\u20AA','\u20AF','\u20A0','\u20A7','\uFDFC','\u5186','\u5143','\u5713','\u3350','\uC6D0','\u09F3','\u20B9','\u20A8','\u09F2','\u0BF9']

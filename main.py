@@ -6,7 +6,7 @@ import os
 def main():
     st.title("Metaphor Shop")
     metaphor = Metaphor(os.environ.get("METAPHOR_API_KEY"))
-    metaphor_shopping_page = MetaphorShopping(metaphor, os.environ.get("CONFIG_PATH"))
+    metaphor_shopping_page = MetaphorShopping(metaphor, 'config/config.yaml')
     #get product
     #get brand
     #get store

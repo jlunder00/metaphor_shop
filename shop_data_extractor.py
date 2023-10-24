@@ -77,15 +77,15 @@ class Shop():
     def get_product_text_info(self):
         text_info = self.find_first_n_texts(tag=self.opts['text_tag'], attrs=self.opts['text_attrs'], html_tag_min=self.opts['html_tag_min']['text'], html_tag_limit=self.opts['html_tag_limit']['text'])
         user_message = "Title: "+self.title+'\nQuery: '+self.query+'\nURL: '+self.url+'\n\nPage HTML tag texts:\n[\n'+text_info+']'
-        return get_gpt_response(user_message=user_message, system_message=self.opts['text_system_message']+self.opts['max_products_per_page'], model=self.opts['model'])
+        return get_gpt_response(user_message=user_message, system_message=self.opts['text_system_message']+str(self.opts['max_products_per_page']), model=self.opts['model'])
 
     def get_product_attr_info(self):
-        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], result_attrs=self.opts['result_attrs'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
+        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], t=self.opts['attr_type'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
         user_message = "Title: "+self.title+'\nQuery: '+self.query+'\nURL: '+self.url+'\n\nPage HTML tag attributes:\n[\n'+attr_info+']'
-        return get_gpt_response(user_message=user_message, system_message=self.opts['attr_system_message']+self.opts['max_products_per_page'], model=self.opts['model'])
+        return get_gpt_response(user_message=user_message, system_message=self.opts['attr_system_message']+str(self.opts['max_products_per_page']), model=self.opts['model'])
 
     def update_with_attr_info(self, csv_text):
-        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], result_attrs=self.opts['result_attrs'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
+        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], t=self.opts['attr_type'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
         user_message = "Title: "+self.title+'\nQuery: '+self.query+"\nURL: "+self.url+'\n\nExtracted CSV:\n'+csv_text+"\n\nPage HTML tag attributes:\n[\n"+attr_info+"]"
         return get_gpt_response(user_message=user_message, system_message=self.opts['update_text_with_attr_system_message'], model=self.opts['model'])
     
@@ -170,10 +170,10 @@ class Shop():
 
     #Use for grabbing html tags with URLs in them and extracting those URLS
     #Can be fed to GPT model to match Product and Image URLS to their appropriate product entry, so long as enough attributes are given
-    def find_first_n_attrs(self, tag, search_attrs, result_attrs, html_tag_min=0, html_tag_limit=70):
+    def find_first_n_attrs(self, tag, search_attrs, t, html_tag_min=0, html_tag_limit=70):
         soup = BeautifulSoup(self.source)
-        tag_attrs = [{a:t.attrs[a] for a in result_attrs} for t in soup.find_all(tag, search_attrs)]
-        filtered_tag_attrs = self.filter_attrs(tag_attrs)
+        tag_attrs = [{a:t.attrs[a] for a in self.opts['result_attrs'][t]} for t in soup.find_all(tag, search_attrs)]
+        filtered_tag_attrs = self.filter_attrs(tag_attrs, t)
         return ',\n'.join(tag_attrs[html_tag_min:html_tag_limit]) if len(tag_attrs) > html_tag_limit else ',\n'.join(tag_attrs)
     
     def filter_attrs(self, tag_attr, t="image"):
@@ -241,14 +241,15 @@ class MetaphorShoppingSearch():
             # folder = self.opts['csv_folder']/Path(url_to_folder_name(url))
             # if folder.exists() and 
             # Later, use a db to avoid reprocessing urls after restart
-            self.shops.append(Shop(url, self.shop_opts))
+            shop = Shop(url, self.shop_opts)
+            self.shops.append(shop)
             self.shop_dfs.append(self.extract_shop_data(shop))
 
 
 
 class MetaphorShopping():
     def __init__(self, metaphor, config_path):
-        config = load_config(config_path)
+        opts = load_config(config_path)
         self.opts = opts['metaphor_shop']
         self.search_opts = opts['metaphor_shop_search']
         self.shop_opts = opts['shop']
@@ -270,9 +271,9 @@ class MetaphorShopping():
             return self.searches_data['data'][idx]
 
         self.searches.append(MetaphorShoppingSearch(product, pBrand, pStore, self.metaphor, self.search_opts, self.shop_opts))
-        self.searches[-1].build_user_question
+        self.searches[-1].build_user_question()
         self.searches[-1].get_urls()
-        self.searches[-1].extract_shop_data()
+        self.searches[-1].process_shops()
         shop_dfs = self.searches[-1].shop_dfs
         if len(shop_dfs) > self.opts['max_urls']:
             shops_to_use = shop_dfs[:self.opts['max_urls']]
