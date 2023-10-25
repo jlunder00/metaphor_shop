@@ -7,10 +7,14 @@ import openai
 #Use this to select all the tags that have some sort of URL in their attributes, 
 #then later filter out those that dont have attrs that include any of the product names previously found
 def url_selector(tag):
-    return tag.name == 'img' or tag.has_attr('href') or tag.has_attr('alt') or tag.has_attr('src')
+    return tag.name == 'img' or tag.has_attr('href') or (tag.has_attr('alt') and tag.has_attr('src'))
+
+def image_url_selector(tag):
+    return tag.has_attr('alt') and tag.has_attr('src')
 
 SEARCH_ATTR_SWITCH = {
-        'url_selector':url_selector
+        'url_selector':url_selector,
+        'image_url_selector':image_url_selector
         }
 
 
@@ -47,6 +51,7 @@ def get_gpt_response(user_message, system_message, model):
     return completion.choices[0].message.content
 
 def get_metaphor_response(metaphor, query, opts):
+    print('METAPHOR HEADERS:', metaphor.headers)
     return [s.url for s in metaphor.search(query, use_autoprompt=opts['use_autoprompt']).results]
     
 

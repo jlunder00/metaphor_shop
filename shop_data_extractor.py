@@ -9,6 +9,12 @@ if sys.version_info[0] < 3:
     from StringIO import StringIO
 else:
     from io import StringIO
+import logging
+# Set up the logging configuration
+log_file = "app2.log"  # File to log to
+
+# Configure the logging
+logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 import pandas as pd
@@ -80,12 +86,12 @@ class Shop():
         return get_gpt_response(user_message=user_message, system_message=self.opts['text_system_message']+str(self.opts['max_products_per_page']), model=self.opts['model'])
 
     def get_product_attr_info(self):
-        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], t=self.opts['attr_type'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
+        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], type_=self.opts['attr_type'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
         user_message = "Title: "+self.title+'\nQuery: '+self.query+'\nURL: '+self.url+'\n\nPage HTML tag attributes:\n[\n'+attr_info+']'
         return get_gpt_response(user_message=user_message, system_message=self.opts['attr_system_message']+str(self.opts['max_products_per_page']), model=self.opts['model'])
 
     def update_with_attr_info(self, csv_text):
-        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], t=self.opts['attr_type'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
+        attr_info = self.find_first_n_attrs(tag=self.opts['attr_tag'], search_attrs=self.opts['search_attrs'], type_=self.opts['attr_type'], html_tag_min=self.opts['html_tag_min']['attrs'], html_tag_limit=self.opts['html_tag_limit']['attrs'])
         user_message = "Title: "+self.title+'\nQuery: '+self.query+"\nURL: "+self.url+'\n\nExtracted CSV:\n'+csv_text+"\n\nPage HTML tag attributes:\n[\n"+attr_info+"]"
         return get_gpt_response(user_message=user_message, system_message=self.opts['update_text_with_attr_system_message'], model=self.opts['model'])
     
@@ -114,9 +120,9 @@ class Shop():
         url_tag_children_texts = [[t.text for t in tag.find_all(re.compile('.*'))] for tag in all_url_tags] 
         urls = []
         for i in range(len(product_names)):
-            matching_urls = [(j, all_tags.attrs['href'] if not all_tags.attrs['href'][0] == '/' else self.url_root+all_tags.attrs['href']) for j in range(len(all_tags_children_texts)) if self.contains_fuzzy_match(product_names[i], all_tags_children_texts[j])]
+            matching_urls = [(j, all_url_tags.attrs['href'] if not all_url_tags.attrs['href'][0] == '/' else self.url_root+all_url_tags.attrs['href']) for j in range(len(url_tag_children_texts)) if self.contains_fuzzy_match(product_names[i], url_tag_children_texts[j])]
             if len(matching_urls) > 1:
-                max_scores = [max([self.get_fuzzy_match_value(product_names[i], text) for text in all_tags_children_texts[url[0]]]) for url in matching_urls]
+                max_scores = [max([self.get_fuzzy_match_value(product_names[i], text) for text in url_tag_children_texts[url[0]]]) for url in matching_urls]
                 urls.append([product_names[i], matching_urls[max_scores.index(max(max_scores))][1]])
             elif len(matching_urls) == 0:
                 urls.append([product_names[i], 'None'])
@@ -125,7 +131,7 @@ class Shop():
         urls_df = pd.DataFrame(urls, columns=['Product Name', 'Product URL'])
         self.final_df = self.no_product_urls_df.merge(urls_df, on="Product Name")
 
-    def contains_fuzzy_match(self, product_name, text_content):
+    def contains_fuzzy_match(self, product_name, text_contents):
         return any([self.fuzzy_match_product_names(product_name, name) for name in text_contents])
         
 
@@ -170,21 +176,38 @@ class Shop():
 
     #Use for grabbing html tags with URLs in them and extracting those URLS
     #Can be fed to GPT model to match Product and Image URLS to their appropriate product entry, so long as enough attributes are given
-    def find_first_n_attrs(self, tag, search_attrs, t, html_tag_min=0, html_tag_limit=70):
+    def find_first_n_attrs(self, tag, search_attrs, type_, html_tag_min=0, html_tag_limit=70):
         soup = BeautifulSoup(self.source)
-        tag_attrs = [{a:t.attrs[a] for a in self.opts['result_attrs'][t]} for t in soup.find_all(tag, search_attrs)]
-        filtered_tag_attrs = self.filter_attrs(tag_attrs, t)
+        tag_attrs = []
+        full_list_attributes = (soup.find_all(tag, search_attrs) if not callable(search_attrs) else soup.find_all(search_attrs))
+        logging.info("soup: ")
+        logging.info(soup)
+        logging.info("init filter: ")
+        logging.info(full_list_attributes)
+        for t in full_list_attributes:
+            logging.info('html tag: ')
+            logging.info(t)
+            new_d = {}
+            for a in self.opts['result_attrs'][type_]:
+                if a not in t.attrs.keys():
+                    print(t)
+                new_d[a] = t.attrs[a] 
+            tag_attrs.append(new_d)
+#        tag_attrs = [{a:t.attrs[a] for a in self.opts['result_attrs'][type_]} for t in (soup.find_all(tag, search_attrs) if not callable(search_attrs) else soup.find_all(search_attrs))]
+        filtered_tag_attrs = self.filter_attrs(tag_attrs, type_)
         return ',\n'.join(tag_attrs[html_tag_min:html_tag_limit]) if len(tag_attrs) > html_tag_limit else ',\n'.join(tag_attrs)
     
     def filter_attrs(self, tag_attr, t="image"):
         tag_attr_filtered = []
         for attrs in tag_attr:
             new_a = {}
-            for k,v in attrs['attrs'].items():
+            for k,v in attrs.items():
                 if len(v) > self.opts['min_length'][t] and k in self.opts['allowed_attrs'][t]:
                     new_a[k] = v
-            if all([k in self.opts['allowed_attrs'][t] for k in attrs['attrs'].keys()]):
+            if all([k in self.opts['allowed_attrs'][t] for k in attrs.keys()]):
                 tag_attr_filtered.append(new_a) 
+        logging.info("filtered: ")
+        logging.info(tag_attr_filtered)
         return self.remove_duplicate_attributes(tag_attr_filtered, t)
 
     def remove_duplicate_attributes(self, attribute_list, t):
@@ -193,8 +216,8 @@ class Shop():
         for d in attribute_list:
             if d[self.opts['attribute_primary_key'][t]] not in seen:
                 seen.add(d[self.opts['attribute_primary_key'][t]])
-                new_l.append(d)
-        return new_l
+                new_list.append(d)
+        return new_list
 
     #Save the CSV string as a csv file, which can then be read into a pandas datafram (easier to combine multiple csvs this way)
     def save(self):
