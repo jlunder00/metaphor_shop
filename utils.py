@@ -52,7 +52,7 @@ def get_gpt_response(user_message, system_message, model):
 
 def get_metaphor_response(metaphor, query, opts):
     print('METAPHOR HEADERS:', metaphor.headers)
-    return [s.url for s in metaphor.search(query, use_autoprompt=opts['use_autoprompt']).results]
+    return [s.url for s in metaphor.search(query, use_autoprompt=opts['use_autoprompt']).results][:opts['max_urls']]
     
 
 def load_config(config_file):
