@@ -37,7 +37,7 @@ def test_perform_shop_search(metaphor_shopping):
     pStore = 'Amazon'
     data = metaphor_shopping.perform_shop_search(product, pBrand, pStore)
     assert isinstance(data, pd.DataFrame)
-    expected_cols = ["Product Name", "Product URL", "Product Image", "Price", "Rating"]
+    expected_cols = ["Product Name", "Product URL", "Image URL", "Price", "Rating"]
     # assert list(data.columns) == expected_cols
     assert all([item in expected_cols for item in list(data.columns)])
     assert all([item in list(data.columns) for item in expected_cols])
@@ -57,7 +57,7 @@ def test_search(metaphor_shopping_search):
     dfs = search.shop_dfs
     df = dfs[0]
     assert isinstance(df, pd.DataFrame)
-    expected_cols = ["Product Name", "Product URL", "Product Image", "Price", "Rating"]
+    expected_cols = ["Product Name", "Product URL", "Image URL", "Price", "Rating"]
     assert all([item in expected_cols for item in list(df.columns)])
     assert all([item in list(df.columns) for item in expected_cols])
 
@@ -130,7 +130,7 @@ def test_shop_find_product_urls(shop):
 def test_get_products(shop):
     shop.get_products()
     assert isinstance(shop.final_df, pd.DataFrame)
-    expected_cols = ["Product Name", "Product URL", "Product Image", "Price", "Rating"]
+    expected_cols = ["Product Name", "Product URL", "Image URL", "Price", "Rating"]
     # assert list(shop.final_df.columns) == expected_cols
     assert all([item in expected_cols for item in list(shop.final_df.columns)])
     assert all([item in list(shop.final_df.columns) for item in expected_cols])

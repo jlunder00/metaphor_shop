@@ -62,7 +62,7 @@ class Shop():
             csv_attr = self.get_product_attr_info()
             csv_text = self.get_product_text_info()
             if csv_attr is not None and csv_text is not None:
-                self.no_product_urls_df = self.manual_combine_text_and_attr_info(csv_text, csv_attr)
+                self.no_product_urls_df = self.manual_combine_text_and_attr_info(csvxt, csv_attr)
             else:
                 self.no_product_urls_df = None
         elif self.opts['join_technique'] == 'update':
@@ -70,7 +70,7 @@ class Shop():
                 csv_text = self.get_product_text_info() 
                 csv_combined = self.update_with_attr_info(csv_text) if csv_text is not None else None
             else:
-                csv_attr = self.get_product_attr_info() 
+                csv_attr = self.get_product_attr_info()  
                 csv_combined = self.update_with_text_info(csv_attr) if csv_attr is not None else None
             self.no_product_urls_df = self.csv_to_df(csv_combined) if csv_combined is not None else None
         else:
@@ -199,6 +199,8 @@ class Shop():
 
     def csv_to_df(self, csv):
         logging.info(csv)
+        if 'Updated CSV:\n' in csv:
+            csv.replace("Updated CSV:\n", '')
         return pd.read_csv(StringIO(csv), sep=';')
 
 
