@@ -1,11 +1,11 @@
 metaphor_shop:
-  max_urls: 3
+  max_urls: 2
   max_products_per_page: 10
 metaphor_shop_search:
   query_system_prompt: "You are a helpful assistant that generates shopping related search queries based on user questions. Generate one and only one search query to find products the user might like to buy. Generate queries searching for pages where you can buy products that a company is advertising. If the user has a preferred store or brand, specified by \"preferred store: x\" or \"preferred brand: x\" after the prompt, include that in the query naturally. if none are specified, do not include it in the query. The query should ideally get pages for catalogs of items rather than individual item pages."
   model: "gpt-3.5-turbo"
   use_autoprompt: true
-  max_urls: 5
+  max_urls: 2
 shop:
   text_only: false
   attr_only: false
